@@ -62,6 +62,15 @@ class SettingController extends Controller
             }
         }
 
+        // Sanitize 16-character Google App Password (strip any spaces)
+        if (isset($validated['smtp_password']) && !empty($validated['smtp_password'])) {
+            $validated['smtp_password'] = str_replace([' ', "\r", "\n", "\t"], '', trim($validated['smtp_password']));
+        }
+
+        if (isset($validated['smtp_username']) && !empty($validated['smtp_username'])) {
+            $validated['smtp_username'] = trim($validated['smtp_username']);
+        }
+
         $settings->update($validated);
 
         return response()->json([
