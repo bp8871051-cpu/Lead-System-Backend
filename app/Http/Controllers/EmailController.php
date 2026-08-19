@@ -129,7 +129,7 @@ class EmailController extends Controller
             'lead_id' => 'required|integer',
             'subject' => 'required|string',
             'body' => 'required|string',
-            'provider' => 'nullable|in:brevo,smtp',
+            'provider' => 'nullable|string',
         ]);
 
         $companyId = $request->user()->company_id;
@@ -165,7 +165,7 @@ class EmailController extends Controller
             'lead_ids.*' => 'integer',
             'subject' => 'required|string',
             'body' => 'required|string',
-            'provider' => 'nullable|in:brevo,smtp',
+            'provider' => 'nullable|string',
         ]);
 
         $companyId = $request->user()->company_id;

@@ -39,7 +39,8 @@ class ProcessCampaignJob implements ShouldQueue
             return;
         }
 
-        foreach ($pendingLeads as $cLead) {
+        $delaySeconds = 0;
+        foreach ($pendingLeads as $index => $cLead) {
             $lead = $cLead->lead;
             if (!$lead || empty($lead->email)) {
                 $cLead->update(['status' => 'failed', 'error_message' => 'No lead email']);
@@ -65,7 +66,14 @@ class ProcessCampaignJob implements ShouldQueue
             }
 
             $cLead->update(['status' => 'queued']);
-            SendEmailJob::dispatch($lead->id, $subject, $body, $campaign->id, $campaign->sending_provider);
+
+            // Pace emails: first immediate, next spaced by 8-18 seconds to prevent spam burst detection
+            if ($index > 0) {
+                $delaySeconds += rand(8, 18);
+            }
+
+            SendEmailJob::dispatch($lead->id, $subject, $body, $campaign->id, $campaign->sending_provider)
+                ->delay(now()->addSeconds($delaySeconds));
         }
     }
 }

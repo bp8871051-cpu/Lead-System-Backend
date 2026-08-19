@@ -17,7 +17,6 @@ class CompanySetting extends Model
         'ai_api_key',
         'ai_model',
         'ai_temperature',
-        'brevo_api_key',
         'smtp_host',
         'smtp_port',
         'smtp_username',
@@ -30,7 +29,6 @@ class CompanySetting extends Model
     protected $hidden = [
         'apify_api_token',
         'ai_api_key',
-        'brevo_api_key',
         'smtp_password',
     ];
 

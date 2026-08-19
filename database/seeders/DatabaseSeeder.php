@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
             'ai_provider' => 'openrouter',
             'ai_model' => 'google/gemini-2.5-flash',
             'ai_temperature' => 0.7,
-            'smtp_host' => 'smtp.brevo.com',
+            'smtp_host' => 'smtp.gmail.com',
             'smtp_port' => 587,
             'smtp_encryption' => 'tls',
             'smtp_from_email' => 'outreach@blueboxx.io',

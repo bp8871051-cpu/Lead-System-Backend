@@ -56,7 +56,6 @@ return new class extends Migration
             $table->string('ai_api_key')->nullable();
             $table->string('ai_model')->default('google/gemini-2.5-flash');
             $table->float('ai_temperature')->default(0.7);
-            $table->string('brevo_api_key')->nullable();
             $table->string('smtp_host')->nullable();
             $table->integer('smtp_port')->default(587);
             $table->string('smtp_username')->nullable();
@@ -183,7 +182,7 @@ return new class extends Migration
             $table->foreignId('email_template_id')->nullable()->constrained('email_templates')->onDelete('set null');
             $table->string('subject')->nullable();
             $table->integer('daily_sending_limit')->default(100);
-            $table->enum('sending_provider', ['brevo', 'smtp'])->default('brevo');
+            $table->string('sending_provider')->default('smtp');
             $table->timestamp('scheduled_at')->nullable();
             $table->enum('status', ['draft', 'scheduled', 'running', 'paused', 'completed', 'failed'])->default('draft');
             $table->integer('total_leads')->default(0);
@@ -226,7 +225,7 @@ return new class extends Migration
             $table->foreignId('lead_id')->nullable()->constrained('leads')->onDelete('cascade');
             $table->foreignId('campaign_id')->nullable()->constrained('campaigns')->onDelete('set null');
             $table->string('subject');
-            $table->string('provider')->default('brevo');
+            $table->string('provider')->default('smtp');
             $table->string('sender_email');
             $table->string('recipient_email');
             $table->enum('status', ['queued', 'sent', 'failed', 'bounced', 'replied'])->default('queued');

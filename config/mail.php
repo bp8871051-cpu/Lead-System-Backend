@@ -39,12 +39,12 @@ return [
         'smtp' => [
             'transport' => 'smtp',
             'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            'host' => env('SMTP_HOST', env('MAIL_HOST', 'smtp.gmail.com')),
+            'port' => (int) env('SMTP_PORT', env('MAIL_PORT', 587)),
+            'encryption' => env('SMTP_ENCRYPTION', env('MAIL_ENCRYPTION', 'tls')),
+            'username' => env('SMTP_USER', env('MAIL_USERNAME')),
+            'password' => env('SMTP_PASSWORD', env('MAIL_PASSWORD')),
+            'timeout' => 15,
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
 
@@ -96,8 +96,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address' => env('SMTP_FROM_EMAIL', env('MAIL_FROM_ADDRESS', 'outreach@leadsystem.com')),
+        'name' => env('SMTP_FROM_NAME', env('MAIL_FROM_NAME', 'LeadSystem CRM')),
     ],
 
 ];

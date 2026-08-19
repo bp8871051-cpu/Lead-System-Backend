@@ -37,16 +37,16 @@ class EmailTemplateRendererService
         $data = [
             'company_name' => !empty($company->name) ? $company->name : 'BLUEBOXX.DA PRIVATE LIMITED',
             'company_website' => !empty($company->website) ? $company->website : 'https://blueboxxda.com',
-            'company_email' => !empty($company->email) ? $company->email : (!empty($company->default_sender_email) ? $company->default_sender_email : 'contact@blueboxxda.com'),
-            'company_phone' => !empty($company->phone) ? $company->phone : '+91 98765 43210',
-            'company_alternate_phone' => $company->alternate_phone ?? null,
+            'company_email' => !empty($company->email) ? $company->email : 'info.blueboxx@gmail.com',
+            'company_phone' => !empty($company->phone) ? $company->phone : '+91 90235 12853',
+            'company_alternate_phone' => $company->alternate_phone ?? '+91 63525 24266',
             'company_address' => !empty($company->address) ? $company->address : 'BLUEBOXX.DA Tower, Tech Park Road',
             'primary_color' => $company->primary_color ?? '#4F46E5',
             'gst_number' => $company->gst_number ?? null,
             'cin_number' => $company->cin_number ?? null,
-            'business_hours' => $company->business_hours ?? 'Mon - Fri (9:00 AM - 6:00 PM)',
-            'privacy_policy_url' => $company->privacy_policy_url ?? $company->website,
-            'terms_url' => $company->terms_url ?? $company->website,
+            'business_hours' => $company->business_hours ?? 'Mon–Fri (10:00 AM – 6:00 PM)',
+            'privacy_policy_url' => $company->privacy_policy_url ?? 'https://blueboxxda.com',
+            'terms_url' => $company->terms_url ?? 'https://blueboxxda.com',
             'services' => $services,
 
             // Lead info
@@ -55,7 +55,7 @@ class EmailTemplateRendererService
             'lead_email' => $lead->email ?? null,
 
             // Sender info
-            'sender_name' => $senderName ?? $company->default_sender_name ?? 'Blueboxx Outreach',
+            'sender_name' => $senderName ?? $company->default_sender_name ?? 'Sumedh Agrawal',
             'sender_designation' => $senderDesignation ?? $company->default_sender_designation ?? 'BLUEBOXX.DA PRIVATE LIMITED',
 
             // AI Content Data

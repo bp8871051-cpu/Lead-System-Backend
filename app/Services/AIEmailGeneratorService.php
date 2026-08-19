@@ -18,7 +18,7 @@ class AIEmailGeneratorService
     }
 
     /**
-     * Generate structured personalized email content and render full Blade HTML.
+     * Generate structured personalized email content and render the exact preserved Blade HTML email.
      */
     public function generateEmail(Lead $lead, array $options = []): array
     {
@@ -26,20 +26,27 @@ class AIEmailGeneratorService
         $settings = CompanySetting::where('company_id', $lead->company_id)->first();
 
         $tone = $options['tone'] ?? $company->company_tone ?? 'Professional';
-        $ctaTarget = $options['cta'] ?? 'Book a 5-minute Strategy Call';
+        $ctaTarget = $options['cta'] ?? 'Would you be open to a quick 5-minute call next Tuesday to discuss how these updates can boost your online presence?';
 
-        $companyName = $company->name ?? 'Enterprise Digital Agency';
-        $companyDesc = $company->description ?? '';
-        $companyServices = is_array($company->services) ? implode(', ', $company->services) : ($company->services ?? 'Website Development, UI/UX Design, Lead Generation');
-        $companyUsp = $company->usp ?? 'Custom digital growth solutions tailored to your business';
+        $companyName = !empty($company->name) ? $company->name : 'BLUEBOXX.DA PRIVATE LIMITED';
+        $companyDesc = $company->description ?? 'Premier Digital Agency & Software Engineering Firm specializing in Web Development, Custom CRM software, and AI Workflow Automation.';
+        $companyServices = 'Website Development, Custom CRM Software, AI Automation, Digital Marketing';
+        $companyUsp = 'Custom digital growth solutions tailored to deliver measurable growth for businesses like yours.';
 
-        $leadName = $lead->business_name;
+        $leadName = $lead->business_name ?? 'Business Partner';
         $contactName = $lead->contact_name;
         $leadCategory = $lead->category ?? 'Business';
         $leadCity = $lead->city ?? 'your city';
         $leadWebsiteStatus = $lead->website_status ?? 'no_website';
 
-        $systemPrompt = "You are an elite enterprise B2B sales strategist for '{$companyName}'. Generate structured JSON content for a high-converting cold email proposal. Output ONLY a valid JSON object. Do not include markdown codeblocks or extra text.";
+        $systemPrompt = "You are an AI email generation engine for '{$companyName}'.
+Your job is to dynamically analyze the lead information and generate structured JSON content for the exact reference email template.
+CRITICAL RULES:
+- Subject line must be professional, personalized, and specific to {$leadName}.
+- Always generate EXACTLY 3 numbered service recommendations tailored to {$leadName} in {$leadCity} ({$leadCategory}).
+- Do NOT invent facts, revenues, employee counts, or fake reviews.
+- CTA must request a quick 5-minute call next Tuesday.
+Output ONLY a valid JSON object without markdown codeblocks or extra text.";
 
         $userPrompt = "Generate structured cold email content for:
 Lead Business: {$leadName}
@@ -51,31 +58,29 @@ Website Status: {$leadWebsiteStatus}
 Sender Company: {$companyName}
 Company Description: {$companyDesc}
 Services Offered: {$companyServices}
-USP: {$companyUsp}
-Desired CTA: {$ctaTarget}
 Tone: {$tone}
 
 Return JSON format ONLY:
 {
-  \"subject\": \"High-converting personalized subject line\",
+  \"subject\": \"Digital Growth & Website Development Proposal for {$leadName}\",
   \"greeting\": \"Hi " . ($contactName ? $contactName : "{$leadName} Team") . ",\",
-  \"introduction\": \"Short 2-line personalized introduction paragraph explaining why we are reaching out based on their business profile and location.\",
+  \"introduction\": \"Personalized 2-line opening paragraph explaining why we are reaching out based on {$leadName}'s business profile and location in {$leadCity}.\",
   \"opportunities\": [
     {
       \"title\": \"Web Applications & Website Development\",
-      \"description\": \"A modern, high-speed responsive web experience built to capture high-intent leads in {$leadCity}.\"
+      \"description\": \"High-speed, mobile-responsive website to establish brand authority in {$leadCity}.\"
     },
     {
-      \"title\": \"UI/UX & Graphic Design\",
-      \"description\": \"High-impact brand visuals and user-friendly design tailored for {$leadCategory} clients.\"
+      \"title\": \"UI/UX & Brand Identity Design\",
+      \"description\": \"Professional visual and logo branding to highlight your {$leadCategory} services.\"
     },
     {
-      \"title\": \"Digital Marketing & SEO\",
-      \"description\": \"Improve local search visibility and capture high-intent customers automatically.\"
+      \"title\": \"CRM & Lead Automation\",
+      \"description\": \"Automate customer inquiry responses and capture lead details instantly.\"
     }
   ],
-  \"value_proposition\": \"We specialize in {$companyServices} tailored for businesses like yours.\",
-  \"cta\": \"{$ctaTarget}: Would you be open to a quick 5-minute call next Tuesday to explore these opportunities?\"
+  \"value_proposition\": \"At {$companyName}, we specialize in Website Development, Custom CRM Software, AI Automation, Digital Marketing designed specifically to deliver measurable growth for businesses like yours.\",
+  \"cta\": \"{$ctaTarget}\"
 }";
 
         $aiProvider = $settings->ai_provider ?? env('AI_PROVIDER', 'openrouter');
@@ -102,7 +107,7 @@ Return JSON format ONLY:
                         $content = $response->json('choices.0.message.content');
                         $cleanJson = preg_replace('/^```(json)?|```$/m', '', trim($content));
                         $decoded = json_decode($cleanJson, true);
-                        if ($decoded && isset($decoded['subject']) && isset($decoded['introduction'])) {
+                        if ($decoded && isset($decoded['subject']) && isset($decoded['introduction']) && !empty($decoded['opportunities'])) {
                             $structuredData = $decoded;
                         }
                     }
@@ -116,13 +121,20 @@ Return JSON format ONLY:
             $structuredData = $this->fallbackStructuredGenerator($lead, $company, $ctaTarget);
         }
 
-        // Render full professional Blade HTML email
+        // Render full exact reference Blade HTML email
         $htmlContent = $this->renderer->renderCorporateEmail(
-            $company,
+            $company ?? new Company([
+                'name' => 'BLUEBOXX.DA PRIVATE LIMITED',
+                'address' => 'BLUEBOXX.DA Tower, Tech Park Road',
+                'website' => 'https://blueboxxda.com',
+                'email' => 'info.blueboxx@gmail.com',
+                'phone' => '+91 90235 12853',
+                'alternate_phone' => '+91 63525 24266',
+            ]),
             $lead,
             $structuredData,
-            $options['sender_name'] ?? null,
-            $options['sender_designation'] ?? null
+            $options['sender_name'] ?? 'Sumedh Agrawal',
+            $options['sender_designation'] ?? 'BLUEBOXX.DA PRIVATE LIMITED'
         );
 
         return [
@@ -133,14 +145,14 @@ Return JSON format ONLY:
     }
 
     /**
-     * Fallback structured generator.
+     * Fallback structured generator preserving exact reference content structure.
      */
     protected function fallbackStructuredGenerator(Lead $lead, ?Company $company, string $cta): array
     {
-        $companyName = $company->name ?? 'Enterprise Digital Solutions';
-        $leadName = $lead->business_name;
+        $companyName = !empty($company->name) ? $company->name : 'BLUEBOXX.DA PRIVATE LIMITED';
+        $leadName = $lead->business_name ?? 'Business Partner';
         $contactName = $lead->contact_name;
-        $city = $lead->city ?? 'your region';
+        $city = $lead->city ?? 'your city';
         $category = $lead->category ?? 'business';
 
         $greeting = !empty($contactName) ? "Hi {$contactName}," : "Hi {$leadName} Team,";
@@ -149,28 +161,26 @@ Return JSON format ONLY:
             $subject = "Digital Growth & Website Development Proposal for {$leadName}";
             $intro = "We came across {$leadName} in {$city} and noticed that your business currently does not have an official website listed on Google. Having a strong digital presence is key to building customer trust and capturing leads.";
             $opportunities = [
-                ['title' => 'Web Applications & Website Development', 'description' => "A high-speed, mobile-responsive website layout to establish brand authority in {$city}."],
-                ['title' => 'UI/UX & Brand Identity Design', 'description' => "Professional visuals and logo branding to highlight your {$category} services."],
+                ['title' => 'Web Applications & Website Development', 'description' => "High-speed, mobile-responsive website to establish brand authority in {$city}."],
+                ['title' => 'UI/UX & Brand Identity Design', 'description' => "Professional visual and logo branding to highlight your {$category} services."],
                 ['title' => 'CRM & Lead Automation', 'description' => 'Automate customer inquiry responses and capture lead details instantly.']
             ];
         } else {
             $subject = "Expansion & Digital Automation Strategy for {$leadName}";
             $intro = "We came across {$leadName} and were impressed by your work as a leading {$category} business in {$city}. We wanted to reach out regarding optimizing your digital conversion channels.";
             $opportunities = [
-                ['title' => 'Web Performance & Modern UX Redesign', 'description' => 'Upgrade your digital interface for maximum speed, mobile conversion, and usability.'],
-                ['title' => 'Digital Marketing & SEO Capture', 'description' => "Rank higher on Google searches across {$city} to outpace local competitors."],
-                ['title' => 'Lead Generation & CRM Workflows', 'description' => 'Streamline customer inquiries into an automated sales pipeline.']
+                ['title' => 'Web Applications & Website Development', 'description' => "High-speed, mobile-responsive web experience built to capture high-intent customers in {$city}."],
+                ['title' => 'UI/UX & Brand Identity Design', 'description' => "High-impact brand visuals and user-friendly interface tailored for {$category} clients."],
+                ['title' => 'CRM & Lead Automation', 'description' => 'Automate customer inquiry responses and streamline your sales pipeline.']
             ];
         }
-
-        $servicesList = is_array($company->services) ? implode(', ', array_slice($company->services, 0, 5)) : 'Website Development, UI/UX Design, Lead Generation';
 
         return [
             'subject' => $subject,
             'greeting' => $greeting,
             'introduction' => $intro,
             'opportunities' => $opportunities,
-            'value_proposition' => "At {$companyName}, we specialize in {$servicesList} designed specifically to deliver measurable growth for businesses like yours.",
+            'value_proposition' => "At {$companyName}, we specialize in Website Development, Custom CRM Software, AI Automation, Digital Marketing designed specifically to deliver measurable growth for businesses like yours.",
             'cta' => "Would you be open to a quick 5-minute call next Tuesday to discuss how these updates can boost your online presence?",
         ];
     }

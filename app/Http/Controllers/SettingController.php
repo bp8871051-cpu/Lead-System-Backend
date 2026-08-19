@@ -23,8 +23,7 @@ class SettingController extends Controller
                 'ai_api_key' => $settings->ai_api_key ? '••••••••' . substr($settings->ai_api_key, -4) : '',
                 'ai_model' => $settings->ai_model ?? 'google/gemini-2.5-flash',
                 'ai_temperature' => $settings->ai_temperature ?? 0.7,
-                'brevo_api_key' => $settings->brevo_api_key ? '••••••••' . substr($settings->brevo_api_key, -4) : '',
-                'smtp_host' => $settings->smtp_host ?? 'smtp.brevo.com',
+                'smtp_host' => $settings->smtp_host ?: 'smtp.gmail.com',
                 'smtp_port' => $settings->smtp_port ?? 587,
                 'smtp_username' => $settings->smtp_username ?? '',
                 'smtp_password' => $settings->smtp_password ? '••••••••' : '',
@@ -47,7 +46,6 @@ class SettingController extends Controller
             'ai_api_key' => 'nullable|string',
             'ai_model' => 'nullable|string',
             'ai_temperature' => 'nullable|numeric|min:0|max:1',
-            'brevo_api_key' => 'nullable|string',
             'smtp_host' => 'nullable|string',
             'smtp_port' => 'nullable|integer',
             'smtp_username' => 'nullable|string',
@@ -58,7 +56,7 @@ class SettingController extends Controller
         ]);
 
         // Don't overwrite with masked string
-        foreach (['apify_api_token', 'ai_api_key', 'brevo_api_key', 'smtp_password'] as $secret) {
+        foreach (['apify_api_token', 'ai_api_key', 'smtp_password'] as $secret) {
             if (isset($validated[$secret]) && str_contains($validated[$secret], '••••')) {
                 unset($validated[$secret]);
             }
@@ -76,7 +74,6 @@ class SettingController extends Controller
     {
         $request->validate([
             'test_email' => 'required|email',
-            'provider' => 'nullable|in:brevo,smtp',
         ]);
 
         $companyId = $request->user()->company_id;
@@ -96,10 +93,10 @@ class SettingController extends Controller
 
         $res = $outreach->sendLeadEmail(
             $tempLead,
-            'LeadSystem CRM - Test Email Dispatch',
-            "Hello!\n\nThis is a test email sent from LeadSystem CRM to verify your SMTP / Brevo integration.\n\nYour mail server is working perfectly!",
+            'LeadSystem CRM - Gmail SMTP Test Email Dispatch',
+            "Hello!\n\nThis is a test email sent from LeadSystem CRM to verify your Gmail SMTP integration.\n\nYour Gmail SMTP server is working perfectly!",
             null,
-            $request->input('provider', 'brevo')
+            'smtp'
         );
 
         if (!$res['success']) {

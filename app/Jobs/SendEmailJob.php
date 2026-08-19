@@ -24,7 +24,7 @@ class SendEmailJob implements ShouldQueue
     protected ?int $campaignId;
     protected string $provider;
 
-    public function __construct(int $leadId, string $subject, string $body, ?int $campaignId = null, string $provider = 'brevo')
+    public function __construct(int $leadId, string $subject, string $body, ?int $campaignId = null, string $provider = 'smtp')
     {
         $this->leadId = $leadId;
         $this->subject = $subject;
