@@ -125,22 +125,11 @@ class EmailOutreachService
         }
 
         try {
-            // Verify SMTP Transporter Connection & Authentication before sending
-            $this->verifySmtpConnection($smtpHost, $smtpPort, $smtpUsername, $smtpPassword);
-
-            // Configure dynamic mailer for Gmail SMTP (STARTTLS on port 587)
-            config([
-                'mail.default' => 'smtp',
-                'mail.mailers.smtp.transport' => 'smtp',
-                'mail.mailers.smtp.host' => $smtpHost,
-                'mail.mailers.smtp.port' => $smtpPort,
-                'mail.mailers.smtp.encryption' => $smtpEncryption ?: 'tls',
-                'mail.mailers.smtp.username' => $smtpUsername,
-                'mail.mailers.smtp.password' => $smtpPassword,
-                'mail.mailers.smtp.timeout' => 15,
-                'mail.from.address' => $senderEmail,
-                'mail.from.name' => $senderName,
-            ]);
+            // Build authenticated Symfony Mailer with STARTTLS (Port 587)
+            $isSsl = ($smtpPort === 465);
+            $transport = new EsmtpTransport($smtpHost, $smtpPort, $isSsl);
+            $transport->setUsername($smtpUsername);
+            $transport->setPassword($smtpPassword);
 
             // Ensure CAN-SPAM compliant opt-out footer is attached to prevent spam triggers
             $companyName = $company->name ?? 'BLUEBOXX.DA PRIVATE LIMITED';
@@ -150,19 +139,21 @@ class EmailOutreachService
             // Generate clean plain-text alternative (Essential for spam filter pass / Multipart MIME)
             $plainTextBody = $this->htmlToPlainText($finalHtmlBody);
 
-            // Dispatch Multipart (HTML + Plain-Text) Peer-to-Peer Email via Gmail SMTP
-            Mail::send([], [], function ($message) use ($recipientEmail, $subject, $senderEmail, $senderName, $replyToEmail, $finalHtmlBody, $plainTextBody) {
-                $message->to($recipientEmail)
-                        ->from($senderEmail, $senderName)
-                        ->replyTo($replyToEmail, $senderName)
-                        ->subject($subject)
-                        ->html($finalHtmlBody)
-                        ->text($plainTextBody);
+            // Construct Multipart (HTML + Plain-Text) Peer-to-Peer Email message
+            $emailMessage = (new \Symfony\Component\Mime\Email())
+                ->from(new \Symfony\Component\Mime\Address($senderEmail, $senderName))
+                ->to(new \Symfony\Component\Mime\Address($recipientEmail))
+                ->replyTo(new \Symfony\Component\Mime\Address($replyToEmail, $senderName))
+                ->subject($subject)
+                ->html($finalHtmlBody)
+                ->text($plainTextBody);
 
-                // Clean standard headers (No marketing or bulk headers to ensure Primary Inbox delivery)
-                $headers = $message->getHeaders();
-                $headers->addTextHeader('X-Priority', '3'); // Normal Priority
-            });
+            // Clean priority headers
+            $emailMessage->getHeaders()->addTextHeader('X-Priority', '3');
+
+            // Send directly through Gmail SMTP transport
+            $symfonyMailer = new \Symfony\Component\Mailer\Mailer($transport);
+            $symfonyMailer->send($emailMessage);
 
             $messageId = 'gmail-smtp-' . uniqid();
             Log::info('Gmail SMTP connection successful');
