@@ -22,8 +22,8 @@ class DatabaseSeeder extends Seeder
             'services' => ['Website Development', 'Custom CRM Software', 'AI Automation', 'Digital Marketing'],
             'products' => ['Blueboxx CRM Suite', 'LeadFlow AI Engine'],
             'website' => 'https://blueboxxda.com',
-            'phone' => '+91 98765 43210',
-            'email' => 'contact@blueboxxda.com',
+            'phone' => '+91 90235 12853',
+            'email' => 'info.blueboxx@gmail.com',
             'address' => 'BLUEBOXX.DA Tower, Tech Park Road',
             'city' => 'Ahmedabad',
             'state' => 'Gujarat',
@@ -33,10 +33,10 @@ class DatabaseSeeder extends Seeder
             'target_locations' => ['Ahmedabad', 'Gandhinagar', 'Surat', 'Vadodara'],
             'usp' => 'We build custom, high-converting digital solutions that turn local traffic into repeat paying customers with guaranteed fast delivery.',
             'company_tone' => 'Professional',
-            'email_signature' => "Best regards,\nBlueboxx Outreach\nBLUEBOXX.DA PRIVATE LIMITED\nhttps://blueboxxda.com\n+91 98765 43210",
-            'default_sender_name' => 'Blueboxx Outreach',
+            'email_signature' => "Best regards,\nSumedh Agrawal\nBLUEBOXX.DA PRIVATE LIMITED\nhttps://blueboxxda.com\n+91 90235 12853",
+            'default_sender_name' => 'Sumedh Agrawal',
             'default_sender_designation' => 'BLUEBOXX.DA PRIVATE LIMITED',
-            'default_sender_email' => 'contact@blueboxxda.com',
+            'default_sender_email' => 'info.blueboxx@gmail.com',
         ]);
 
         // 2. Create Admin User
@@ -46,7 +46,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@blueboxx.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
-            'phone' => '+91 98765 43210',
+            'phone' => '+91 90235 12853',
         ]);
 
         // 3. Create Settings
@@ -58,9 +58,11 @@ class DatabaseSeeder extends Seeder
             'ai_temperature' => 0.7,
             'smtp_host' => 'smtp.gmail.com',
             'smtp_port' => 587,
+            'smtp_username' => 'info.blueboxx@gmail.com',
+            'smtp_password' => 'iiwgdsncxyrlwnnm',
             'smtp_encryption' => 'tls',
-            'smtp_from_email' => 'outreach@blueboxx.io',
-            'smtp_from_name' => 'Blueboxx Outreach',
+            'smtp_from_email' => 'info.blueboxx@gmail.com',
+            'smtp_from_name' => 'Sumedh Agrawal',
         ]);
 
         // 4. Create Sample Email Templates
