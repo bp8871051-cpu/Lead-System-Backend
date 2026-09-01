@@ -12,7 +12,7 @@ class DomainEmailFinderService
      */
     public function findEmailForLead(string $businessName, ?string $website, ?string $city = null): ?string
     {
-        // 1. If website is available, scrape homepage and /contact pages
+        // 1. If website is available, scrape homepage with quick timeout
         if (!empty($website) && filter_var($website, FILTER_VALIDATE_URL)) {
             $email = $this->scrapeWebsiteEmails($website);
             if ($email) {
@@ -20,13 +20,13 @@ class DomainEmailFinderService
             }
         }
 
-        // 2. Query DuckDuckGo HTML web search for business contact email
+        // 2. Query DuckDuckGo HTML web search with tight timeout
         try {
             $searchTerm = urlencode("\"{$businessName}\" " . ($city ? "\"{$city}\"" : "") . " email OR contact");
             $response = Http::withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept-Language' => 'en-US,en;q=0.9',
-            ])->timeout(8)->get("https://html.duckduckgo.com/html/?q={$searchTerm}");
+            ])->timeout(3)->get("https://html.duckduckgo.com/html/?q={$searchTerm}");
 
             if ($response->successful()) {
                 $html = $response->body();
@@ -43,7 +43,7 @@ class DomainEmailFinderService
     }
 
     /**
-     * Scrape website homepage, /contact, and /about pages for email addresses.
+     * Scrape website homepage, /contact for email addresses with strict 2-second timeout.
      */
     public function scrapeWebsiteEmails(string $url): ?string
     {
@@ -54,9 +54,7 @@ class DomainEmailFinderService
         $pagesToTry = [
             $url,
             $baseUrl . '/contact',
-            $baseUrl . '/contact-us',
             $baseUrl . '/about',
-            $baseUrl . '/about-us',
         ];
 
         $allFoundEmails = [];
@@ -65,7 +63,7 @@ class DomainEmailFinderService
             try {
                 $response = Http::withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
-                ])->timeout(6)->get($pageUrl);
+                ])->timeout(2)->get($pageUrl);
 
                 if ($response->successful()) {
                     $emails = $this->extractEmailsFromHtml($response->body(), $domain);
@@ -100,7 +98,6 @@ class DomainEmailFinderService
      */
     protected function extractEmailsFromHtml(string $html, ?string $targetDomain = null): array
     {
-        // Regex to match email pattern
         preg_match_all('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}/i', $html, $matches);
 
         if (empty($matches[0])) {
@@ -115,7 +112,6 @@ class DomainEmailFinderService
         foreach ($matches[0] as $rawEmail) {
             $email = strtolower(trim($rawEmail));
 
-            // Check file extension noise like image@2x.png
             $ext = strtolower(pathinfo($email, PATHINFO_EXTENSION));
             if (in_array($ext, $ignoredExtensions)) continue;
 
@@ -124,7 +120,6 @@ class DomainEmailFinderService
 
             $emailDomain = $parts[1];
 
-            // Filter out junk/framework domains
             $isIgnored = false;
             foreach ($ignoredDomains as $ig) {
                 if (str_contains($emailDomain, $ig)) {
@@ -134,7 +129,6 @@ class DomainEmailFinderService
             }
             if ($isIgnored) continue;
 
-            // Filter out invalid email characters
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) continue;
 
             $validEmails[] = $email;
@@ -142,7 +136,6 @@ class DomainEmailFinderService
 
         $validEmails = array_unique($validEmails);
 
-        // If targetDomain is given, prioritize emails matching target domain
         if ($targetDomain) {
             $domainMatches = array_filter($validEmails, function ($e) use ($targetDomain) {
                 return str_contains($e, $targetDomain);

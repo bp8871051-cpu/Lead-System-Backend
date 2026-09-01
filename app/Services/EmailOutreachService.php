@@ -94,13 +94,14 @@ class EmailOutreachService
             $smtpPassword = str_replace([' ', "\r", "\n", "\t"], '', trim($smtpPassword));
         }
 
-        // For SPF/DKIM alignment on Gmail SMTP: From address must be the authenticated Gmail account
-        $senderEmail = $smtpUsername ?: ($settings->smtp_from_email ?? config('mail.from.address') ?: 'sumedha.blueboxx@gmail.com');
+        // For strict SPF/DKIM alignment on Gmail SMTP: From address MUST match authenticated Gmail account
+        $senderEmail = !empty($smtpUsername) ? $smtpUsername : ($settings->smtp_from_email ?? env('SMTP_FROM_EMAIL', env('MAIL_FROM_ADDRESS', 'info.blueboxx@gmail.com')));
+        
         $senderName = $settings->smtp_from_name 
             ?? config('mail.from.name')
-            ?? env('SMTP_FROM_NAME', env('MAIL_FROM_NAME', $company->default_sender_name ?? 'BLUEBOXX.DA'));
+            ?? env('SMTP_FROM_NAME', env('MAIL_FROM_NAME', $company->default_sender_name ?? 'Sumedh | Blueboxx'));
 
-        $replyToEmail = $settings->smtp_from_email ?? $company->default_sender_email ?? $senderEmail;
+        $replyToEmail = $senderEmail;
 
         // 4. Pre-send Verification for Required Credentials
         if (empty($smtpHost)) {
@@ -131,13 +132,30 @@ class EmailOutreachService
             $transport->setUsername($smtpUsername);
             $transport->setPassword($smtpPassword);
 
-            // Ensure CAN-SPAM compliant opt-out footer is attached to prevent spam triggers
+            // Convert raw text into clean semantic HTML if no HTML tags are present
+            if (!preg_match('/<[a-z][\s\S]*>/i', $body)) {
+                $formattedParagraphs = '';
+                $paragraphs = preg_split("/\r\n\r\n|\n\n/", trim($body));
+                foreach ($paragraphs as $para) {
+                    $cleanPara = nl2br(htmlspecialchars(trim($para)));
+                    if (!empty($cleanPara)) {
+                        $formattedParagraphs .= "<p style=\"margin: 0 0 14px 0; font-size: 14.5px; line-height: 1.65; color: #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\">{$cleanPara}</p>";
+                    }
+                }
+                $body = "<div style=\"max-width: 600px; margin: 0 auto; padding: 12px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; color: #1e293b;\">{$formattedParagraphs}</div>";
+            }
+
+            // Ensure clean CAN-SPAM compliant opt-out footer
             $companyName = $company->name ?? 'BLUEBOXX.DA PRIVATE LIMITED';
             $companyAddress = $company->address ?? '';
             $finalHtmlBody = $this->ensureComplianceFooter($body, $senderEmail, $companyName, $companyAddress);
             
-            // Generate clean plain-text alternative (Essential for spam filter pass / Multipart MIME)
+            // Generate clean plain-text alternative (Crucial for spam filter pass / Multipart MIME)
             $plainTextBody = $this->htmlToPlainText($finalHtmlBody);
+
+            // RFC 5322 Message-ID domain resolution
+            $senderDomain = substr(strrchr($senderEmail, "@"), 1) ?: 'gmail.com';
+            $messageIdToken = bin2hex(random_bytes(12)) . '@' . $senderDomain;
 
             // Construct Multipart (HTML + Plain-Text) Peer-to-Peer Email message
             $emailMessage = (new \Symfony\Component\Mime\Email())
@@ -146,18 +164,20 @@ class EmailOutreachService
                 ->replyTo(new \Symfony\Component\Mime\Address($replyToEmail, $senderName))
                 ->subject($subject)
                 ->html($finalHtmlBody)
-                ->text($plainTextBody);
+                ->text($plainTextBody)
+                ->date(new \DateTimeImmutable());
 
-            // Clean priority headers
-            $emailMessage->getHeaders()->addTextHeader('X-Priority', '3');
+            // Add standard RFC-compliant personal headers (avoiding bulk mailer flags)
+            $headers = $emailMessage->getHeaders();
+            $headers->addIdHeader('Message-ID', $messageIdToken);
+            $headers->addTextHeader('X-Priority', '3'); // Normal priority (standard for human emails)
 
             // Send directly through Gmail SMTP transport
             $symfonyMailer = new \Symfony\Component\Mailer\Mailer($transport);
             $symfonyMailer->send($emailMessage);
 
-            $messageId = 'gmail-smtp-' . uniqid();
-            Log::info('Gmail SMTP connection successful');
-            Log::info('Email sent successfully with Multipart MIME & Unsubscribe headers', [
+            $messageId = 'gmail-smtp-' . $messageIdToken;
+            Log::info('Email dispatched successfully with Inbox Deliverability headers', [
                 'recipient' => $recipientEmail,
                 'message_id' => $messageId,
             ]);
@@ -191,7 +211,7 @@ class EmailOutreachService
                     ActivityLog::create([
                         'company_id' => $lead->company_id,
                         'lead_id' => $lead->id,
-                        'description' => "Outreach email sent via Gmail SMTP: '{$subject}'",
+                        'description' => "Outreach email sent to {$recipientEmail}: '{$subject}'",
                         'action_type' => 'email_sent',
                         'meta' => ['message_id' => $messageId, 'provider' => 'smtp']
                     ]);
@@ -257,10 +277,9 @@ class EmailOutreachService
      * @param string $password
      * @throws \Exception
      */
-    protected function verifySmtpConnection(string $host, int $port, string $username, string $password): void
+    public function verifySmtpConnection(string $host, int $port, string $username, string $password): void
     {
         try {
-            // Port 587 uses STARTTLS (tls: false initially, then upgraded via STARTTLS)
             $isSsl = ($port === 465);
             $transport = new EsmtpTransport($host, $port, $isSsl);
             $transport->setUsername($username);
@@ -273,7 +292,7 @@ class EmailOutreachService
     }
 
     /**
-     * Ensure CAN-SPAM and GDPR compliant opt-out footer is attached.
+     * Ensure CAN-SPAM and GDPR compliant opt-out footer is attached cleanly.
      *
      * @param string $body
      * @param string $senderEmail
@@ -289,8 +308,8 @@ class EmailOutreachService
         }
 
         $footerHtml = '
-        <div style="margin-top: 36px; padding-top: 18px; border-top: 1px solid #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 11px; color: #94a3b8; line-height: 1.6;">
-            <p style="margin: 0 0 6px 0;">You received this email because your business was listed in public business directories. If you prefer not to receive future outreach, you can <a href="mailto:' . htmlspecialchars($senderEmail) . '?subject=Unsubscribe" style="color: #4f46e5; text-decoration: underline;">unsubscribe immediately here</a>.</p>
+        <div style="margin-top: 28px; padding-top: 14px; border-top: 1px solid #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 11px; color: #94a3b8; line-height: 1.5;">
+            <p style="margin: 0 0 4px 0;">You received this message regarding digital solutions for your business. If you prefer not to receive future emails, you can <a href="mailto:' . htmlspecialchars($senderEmail) . '?subject=Unsubscribe" style="color: #64748b; text-decoration: underline;">unsubscribe here</a>.</p>
             <p style="margin: 0;">' . htmlspecialchars($companyName) . (!empty($companyAddress) ? ' • ' . htmlspecialchars($companyAddress) : '') . '</p>
         </div>';
 
@@ -303,9 +322,11 @@ class EmailOutreachService
      * @param string $html
      * @return string
      */
-    protected function htmlToPlainText(string $html): string
+    public function htmlToPlainText(string $html): string
     {
-        $text = preg_replace('/<br\s*\/?>/i', "\n", $html);
+        $text = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
+        $text = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $text);
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $text);
         $text = preg_replace('/<\/p>/i', "\n\n", $text);
         $text = preg_replace('/<\/h[1-6]>/i', "\n\n", $text);
         $text = preg_replace('/<li[^>]*>/i', "• ", $text);
@@ -381,3 +402,4 @@ class EmailOutreachService
         ];
     }
 }
+

@@ -197,6 +197,10 @@ class EmailController extends Controller
                 $request->body
             );
 
+            if ($index > 0) {
+                usleep(rand(1000000, 2000000)); // 1.0 - 2.0s human-like pacing
+            }
+
             $res = $this->outreachService->sendLeadEmail(
                 $lead,
                 $personalizedSubject,

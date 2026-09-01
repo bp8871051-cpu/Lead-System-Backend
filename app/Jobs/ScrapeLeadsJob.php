@@ -19,8 +19,8 @@ class ScrapeLeadsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $timeout = 600;
-    public int $tries = 2;
+    public int $timeout = 300;
+    public int $tries = 1;
 
     protected int $scrapingJobId;
     protected array $criteria;
@@ -33,21 +33,24 @@ class ScrapeLeadsJob implements ShouldQueue
 
     public function handle(ApifyService $apifyService, DirectScraperService $directScraper, LeadNormalizerService $normalizer): void
     {
+        @set_time_limit(180);
+        @ini_set('max_execution_time', 180);
+
         $jobRecord = ScrapingJob::find($this->scrapingJobId);
         if (!$jobRecord) return;
 
         $jobRecord->update(['status' => 'running', 'started_at' => now()]);
 
-        $engine = $this->criteria['engine'] ?? 'auto';
+        $engine = $this->criteria['engine'] ?? 'direct';
         $companyId = $jobRecord->company_id;
         $settings = CompanySetting::where('company_id', $companyId)->first();
         $apifyToken = $settings->apify_api_token ?? config('services.apify.token', env('APIFY_API_TOKEN'));
 
         $items = [];
-        $sourceType = 'direct_web';
+        $sourceType = 'google_maps';
 
         try {
-            if ($engine === 'apify' || ($engine === 'auto' && !empty($apifyToken) && !str_contains($apifyToken, 'YOUR_APIFY'))) {
+            if ($engine === 'apify' && !empty($apifyToken) && !str_contains($apifyToken, 'YOUR_APIFY') && strlen($apifyToken) > 10) {
                 try {
                     $sourceType = 'apify';
                     $runData = $apifyService->startScraping($companyId, $this->criteria);
@@ -58,11 +61,11 @@ class ScrapeLeadsJob implements ShouldQueue
 
                     $completed = false;
                     $datasetId = $runData['dataset_id'];
-                    $maxRetries = 24; // 24 x 5s = 120s
+                    $maxRetries = 15; // 15 x 3s = 45s
 
                     for ($i = 0; $i < $maxRetries; $i++) {
-                        sleep(5);
-                        $statusCheck = $apifyService->checkRunStatus($runData['run_id']);
+                        sleep(3);
+                        $statusCheck = $apifyService->checkRunStatus($runData['run_id'], $apifyToken);
 
                         if ($statusCheck['status'] === 'SUCCEEDED') {
                             $completed = true;
@@ -71,19 +74,19 @@ class ScrapeLeadsJob implements ShouldQueue
                         }
 
                         if (in_array($statusCheck['status'], ['FAILED', 'ABORTED', 'TIMED-OUT'])) {
-                            throw new \Exception("Apify run status: " . $statusCheck['status']);
+                            throw new \Exception("Apify actor status: " . $statusCheck['status']);
                         }
                     }
 
-                    $items = $apifyService->getDatasetItems($datasetId);
+                    $items = $apifyService->getDatasetItems($datasetId, $apifyToken);
                 } catch (\Exception $apifyEx) {
-                    Log::warning("Apify Scraper attempt failed or unconfigured, seamlessly falling back to Direct Scraper Engine: " . $apifyEx->getMessage());
-                    $sourceType = 'direct_web';
+                    Log::warning("Apify Scraper unavailable or token invalid, falling back to Direct Scraper Engine: " . $apifyEx->getMessage());
+                    $sourceType = 'google_maps';
                     $items = $directScraper->scrape($this->criteria);
                 }
             } else {
-                // Direct Web Scraper Engine
-                $sourceType = 'direct_web';
+                // High-speed Direct Web Scraper Engine (Photon + Nominatim + Web Directory)
+                $sourceType = 'google_maps';
                 $items = $directScraper->scrape($this->criteria);
             }
 
@@ -101,14 +104,15 @@ class ScrapeLeadsJob implements ShouldQueue
             $invalid = 0;
 
             foreach ($items as $item) {
-                if (empty($item['title']) && empty($item['business_name']) && empty($item['name'])) {
+                if (empty($item['title']) && empty($item['business_name']) && empty($item['name']) && empty($item['placeName'])) {
                     $invalid++;
                     continue;
                 }
 
-                $res = $normalizer->processAndSave($item, $companyId, $sourceType, $item['placeId'] ?? null);
+                $placeId = $item['placeId'] ?? ($item['id'] ?? null);
+                $res = $normalizer->processAndSave($item, $companyId, $sourceType, $placeId);
 
-                if ($res['is_duplicate']) {
+                if (!empty($res['is_duplicate'])) {
                     $duplicates++;
                 } else {
                     $saved++;

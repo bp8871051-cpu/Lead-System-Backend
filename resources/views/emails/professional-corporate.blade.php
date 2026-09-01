@@ -3,220 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $subject ?? 'Enterprise Proposal' }}</title>
-    <style>
-        body, table, td, p, a, li, blockquote {
-            -webkit-text-size-adjust: 100%;
-            -ms-text-size-adjust: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100% !important;
-            background-color: #f8fafc;
-            color: #1e293b;
-        }
-        .email-container {
-            max-width: 650px;
-            margin: 20px auto;
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-        .header-bar {
-            background-color: #ffffff;
-            padding: 12px 24px;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 11px;
-            color: #64748b;
-        }
-        .content-area {
-            padding: 28px 24px;
-            font-size: 14px;
-            line-height: 1.6;
-            color: #334155;
-        }
-        .subject-box {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0f172a;
-            padding-bottom: 16px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-        .opportunity-item {
-            margin-bottom: 14px;
-            padding-left: 4px;
-        }
-        .opportunity-title {
-            font-weight: 700;
-            color: #0f172a;
-        }
-        .divider {
-            height: 1px;
-            background-color: #e2e8f0;
-            margin: 24px 0;
-            border: none;
-        }
-        .info-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 16px;
-            font-size: 12px;
-            color: #475569;
-            margin: 20px 0;
-            line-height: 1.6;
-        }
-        .badge {
-            display: inline-block;
-            background-color: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            color: #334155;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            margin: 2px 4px 4px 0;
-            font-weight: 500;
-        }
-        .footer-area {
-            padding: 20px 24px;
-            background-color: #ffffff;
-            font-size: 11px;
-            color: #94a3b8;
-            border-top: 1px solid #f1f5f9;
-            text-align: left;
-        }
-        a {
-            color: {{ $primary_color ?? '#4F46E5' }};
-            text-decoration: none;
-        }
-    </style>
+    <title>{{ $subject ?? 'Business Inquiry' }}</title>
 </head>
-<body>
+<body style="margin: 0; padding: 20px 10px; background-color: #ffffff; color: #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14.5px; line-height: 1.65; -webkit-font-smoothing: antialiased;">
 
-<div class="email-container">
-    <!-- 1. TOP HEADER -->
-    <div class="header-bar">
-        <table width="100%" border="0" cellspacing="0" cellpadding="0">
-            <tr>
-                <td align="left">
-                    Official Preview: <strong style="color: {{ $primary_color ?? '#4F46E5' }};">{{ $company_name ?? 'BLUEBOXX.DA PRIVATE LIMITED' }}</strong> Enterprise Email
-                </td>
-                @if(!empty($lead_email))
-                <td align="right" style="color: #64748b;">
-                    To: <strong>{{ $lead_email }}</strong>
-                </td>
-                @endif
-            </tr>
-        </table>
-    </div>
+<div style="max-width: 580px; margin: 0 auto; padding: 10px 0; background-color: #ffffff;">
 
-    <!-- MAIN BODY CONTENT -->
-    <div class="content-area">
-        <!-- 2. SUBJECT -->
-        <div class="subject-box">
-            Subject: {{ $subject }}
-        </div>
-
-        <!-- 3. GREETING -->
-        <p style="margin-top: 0; font-size: 15px; font-weight: 600; color: #0f172a;">
-            @if(!empty($contact_name))
-                Hi {{ $contact_name }},
-            @else
-                Hi {{ $business_name }} Team,
-            @endif
-        </p>
-
-        <!-- 4. PERSONALIZED OPENING PARAGRAPH -->
-        <p>I hope this email finds you well.</p>
-        <p>{!! nl2br(e($introduction)) !!}</p>
-
-        <!-- 5. THREE NUMBERED SERVICE RECOMMENDATIONS -->
-        @if(!empty($opportunities) && is_array($opportunities))
-            <div style="margin: 20px 0;">
-                @foreach($opportunities as $index => $opp)
-                    <div class="opportunity-item">
-                        <span class="opportunity-title">{{ $index + 1 }}. {{ $opp['title'] ?? 'Service Opportunity' }}:</span>
-                        <div style="color: #475569; margin-top: 2px;">{{ $opp['description'] ?? '' }}</div>
-                    </div>
-                @endforeach
-            </div>
+    <!-- GREETING -->
+    <p style="margin: 0 0 16px 0; font-size: 15px; font-weight: 600; color: #0f172a;">
+        @if(!empty($contact_name))
+            Hi {{ $contact_name }},
+        @else
+            Hi {{ $business_name }} Team,
         @endif
+    </p>
 
-        <!-- 6. BLUEBOXX.DA HIGHLIGHTED PURPLE INFORMATION BOX -->
-        <p style="background-color: #faf5ff; border-left: 3px solid {{ $primary_color ?? '#4F46E5' }}; padding: 12px 16px; margin: 20px 0; color: #334155; font-size: 13px; line-height: 1.6;">
-            At <strong>{{ $company_name ?? 'BLUEBOXX.DA PRIVATE LIMITED' }}</strong>, we specialize in Website Development, Custom CRM Software, AI Automation, Digital Marketing designed specifically to deliver measurable growth for businesses like yours.
+    <!-- INTRO PARAGRAPH -->
+    <p style="margin: 0 0 16px 0; color: #334155;">
+        I hope this note finds you well.
+    </p>
+    <p style="margin: 0 0 18px 0; color: #334155;">
+        {!! nl2br(e($introduction)) !!}
+    </p>
+
+    <!-- OPPORTUNITIES / SERVICE IDEAS -->
+    @if(!empty($opportunities) && is_array($opportunities))
+        <div style="margin: 18px 0 22px 0;">
+            @foreach($opportunities as $index => $opp)
+                <div style="margin-bottom: 12px; padding-left: 4px;">
+                    <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">
+                        • {{ $opp['title'] ?? 'Digital Growth Opportunity' }}
+                    </div>
+                    <div style="color: #475569; font-size: 14px; padding-left: 12px;">
+                        {{ $opp['description'] ?? '' }}
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    <!-- VALUE PROPOSITION -->
+    @if(!empty($value_proposition))
+        <p style="margin: 0 0 18px 0; color: #334155;">
+            At <strong>{{ $company_name ?? 'BLUEBOXX.DA PRIVATE LIMITED' }}</strong>, we specialize in building custom web platforms, automated lead systems, and visual branding tailored to deliver measurable business growth.
         </p>
+    @endif
 
-        <!-- 7. CTA PARAGRAPH -->
-        <p style="font-weight: 500; color: #0f172a; margin: 18px 0;">
-            {{ $cta ?? 'Would you be open to a quick 5-minute call next Tuesday to discuss how these updates can boost your online presence?' }}
-        </p>
+    <!-- CALL TO ACTION -->
+    <p style="margin: 0 0 24px 0; font-weight: 500; color: #0f172a;">
+        {{ $cta ?? 'Would you be open to a quick 5-minute call next Tuesday to discuss how these updates can help your business?' }}
+    </p>
 
-        <hr class="divider">
+    <!-- DIVIDER -->
+    <div style="height: 1px; background-color: #e2e8f0; margin: 24px 0; border: none;"></div>
 
-        <!-- 8. REGARDS / SIGNATURE -->
-        <div style="font-size: 13px; color: #334155; line-height: 1.5;">
-            <p style="margin: 0;">Regards,</p>
-            <p style="margin: 4px 0 0 0; font-weight: 700; color: #0f172a;">{{ $sender_name ?? 'Sumedh Agrawal' }}</p>
-            <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 600;">{{ $sender_designation ?? 'BLUEBOXX.DA PRIVATE LIMITED' }}</p>
-            @if(!empty($company_name) && $company_name !== ($sender_designation ?? ''))
-                <p style="margin: 4px 0 0 0; font-weight: 700; color: {{ $primary_color ?? '#4F46E5' }};">{{ $company_name }}</p>
+    <!-- PROFESSIONAL SIGNATURE -->
+    <div style="font-size: 13.5px; color: #334155; line-height: 1.55;">
+        <p style="margin: 0 0 4px 0; color: #475569;">Warm regards,</p>
+        <p style="margin: 0; font-weight: 700; font-size: 14.5px; color: #0f172a;">{{ $sender_name ?? 'Sumedh Agrawal' }}</p>
+        <p style="margin: 1px 0 0 0; color: #64748b; font-size: 12.5px;">{{ $sender_designation ?? 'Business Development' }} &bull; <strong style="color: #4338ca;">{{ $company_name ?? 'BLUEBOXX.DA PRIVATE LIMITED' }}</strong></p>
+        
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b;">
+            @if(!empty($company_phone))
+                <span>📞 {{ $company_phone }}</span>
+                @if(!empty($company_alternate_phone)) &nbsp;|&nbsp; <span>📱 {{ $company_alternate_phone }}</span> @endif
+                <br>
             @endif
-            <p style="margin: 2px 0 0 0;"><a href="{{ $company_website ?? 'https://blueboxxda.com' }}" target="_blank">{{ $company_website ?? 'https://blueboxxda.com' }}</a></p>
-        </div>
-
-        <!-- 9. CONTACT INFORMATION CARD -->
-        <div class="info-card">
-            <div style="margin-bottom: 4px;">📍 <strong>Address:</strong> {{ $company_address ?? 'BLUEBOXX.DA Tower, Tech Park Road' }}</div>
-            <div style="margin-bottom: 4px;">
-                🌐 <strong>Website:</strong> <a href="{{ $company_website ?? 'https://blueboxxda.com' }}" target="_blank">{{ $company_website ?? 'https://blueboxxda.com' }}</a>
-                &nbsp;|&nbsp; ✉ <strong>Support:</strong> <a href="mailto:{{ $company_email ?? 'contact@blueboxxda.com' }}">{{ $company_email ?? 'contact@blueboxxda.com' }}</a>
-            </div>
-            <div style="margin-bottom: 4px;">
-                📞 <strong>Office Contact:</strong> {{ $company_phone ?? '+91 63565 6210' }}
-                &nbsp;|&nbsp; 📱 <strong>Alt Contact:</strong> {{ $company_alternate_phone ?? '+91 63565 6210' }}
-            </div>
-            <div>
-                <strong>Hours:</strong> {{ $business_hours ?? 'Mon–Fri (10:00 AM – 6:00 PM)' }}
-            </div>
-        </div>
-
-        <!-- 10. OUR ENTERPRISE DIGITAL SERVICES (FOUR BADGES) -->
-        <div style="margin-top: 20px;">
-            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                OUR ENTERPRISE DIGITAL SERVICES
-            </div>
-            <div>
-                <span class="badge">✓ Website Development</span>
-                <span class="badge">✓ Custom CRM Software</span>
-                <span class="badge">✓ AI Automation</span>
-                <span class="badge">✓ Digital Marketing</span>
-            </div>
+            @if(!empty($company_website))
+                <span>🌐 <a href="{{ $company_website }}" target="_blank" style="color: #4f46e5; text-decoration: none;">{{ preg_replace('/^https?:\/\//', '', $company_website) }}</a></span>
+                &nbsp;|&nbsp;
+            @endif
+            <span>✉ <a href="mailto:{{ $company_email ?? 'info.blueboxx@gmail.com' }}" style="color: #4f46e5; text-decoration: none;">{{ $company_email ?? 'info.blueboxx@gmail.com' }}</a></span>
+            @if(!empty($company_address))
+                <br><span>📍 {{ $company_address }}</span>
+            @endif
         </div>
     </div>
 
-    <!-- 11. FOOTER -->
-    <div class="footer-area">
-        <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 600; color: #64748b;">
-            © 2026 {{ $company_name ?? 'BLUEBOXX.DA PRIVATE LIMITED' }}. All Rights Reserved.
+    <!-- COMPLIANT FOOTER -->
+    <div style="margin-top: 32px; padding-top: 14px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; line-height: 1.5;">
+        <p style="margin: 0 0 4px 0;">
+            You received this message regarding digital growth opportunities for {{ $business_name }}. If you prefer not to receive future emails, you can <a href="mailto:{{ $company_email ?? 'info.blueboxx@gmail.com' }}?subject=Unsubscribe" style="color: #64748b; text-decoration: underline;">unsubscribe here</a> or simply reply "unsubscribe".
         </p>
-
-        <p style="margin: 0 0 10px 0; font-size: 10px; color: #94a3b8; line-height: 1.4;">
-            <strong>CONFIDENTIALITY NOTICE:</strong><br>
-            This email and its contents are confidential and intended solely for the recipient. If you have received this email in error, please notify the sender and delete it.
-        </p>
-
-        <p style="margin: 0; font-size: 10px;">
-            <a href="{{ $company_website ?? 'https://blueboxxda.com' }}" target="_blank">Company Website</a> &bull;
-            <a href="{{ $privacy_policy_url ?? 'https://blueboxxda.com' }}" target="_blank">Privacy Policy</a> &bull;
-            <a href="{{ $terms_url ?? 'https://blueboxxda.com' }}" target="_blank">Terms & Conditions</a>
+        <p style="margin: 0; font-size: 10.5px;">
+            {{ $company_name ?? 'BLUEBOXX.DA PRIVATE LIMITED' }}
         </p>
     </div>
+
 </div>
 
 </body>

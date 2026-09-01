@@ -59,7 +59,7 @@ class EmailTemplateRendererService
             'sender_designation' => $senderDesignation ?? $company->default_sender_designation ?? 'BLUEBOXX.DA PRIVATE LIMITED',
 
             // AI Content Data
-            'subject' => $contentData['subject'] ?? "Cold Outreach & Business Growth Proposal for {$lead->business_name}",
+            'subject' => $contentData['subject'] ?? "Quick question regarding {$lead->business_name}",
             'introduction' => $contentData['introduction'] ?? "We identified key opportunities where an upgraded web experience could accelerate your digital growth.",
             'opportunities' => $contentData['opportunities'] ?? [
                 ['title' => 'Web Applications & Website Development', 'description' => 'A modern, high-speed responsive website layout.'],

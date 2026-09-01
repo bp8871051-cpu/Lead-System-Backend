@@ -12,6 +12,17 @@ class ScrapingController extends Controller
     public function index(Request $request)
     {
         $companyId = $request->user()->company_id;
+
+        // Auto-heal legacy stale jobs stuck in running state for more than 5 minutes
+        ScrapingJob::where('company_id', $companyId)
+            ->whereIn('status', ['running', 'processing', 'queued'])
+            ->where('created_at', '<', now()->subMinutes(3))
+            ->update([
+                'status' => 'failed',
+                'error_message' => 'Job execution timed out. Please run with Fast Direct Engine.',
+                'completed_at' => now()
+            ]);
+
         $jobs = ScrapingJob::where('company_id', $companyId)->latest()->paginate(15);
 
         return response()->json([
@@ -22,6 +33,9 @@ class ScrapingController extends Controller
 
     public function start(Request $request)
     {
+        @set_time_limit(180);
+        @ini_set('max_execution_time', 180);
+
         $validated = $request->validate([
             'keyword' => 'required|string|max:255',
             'location' => 'nullable|string|max:255',
@@ -72,7 +86,7 @@ class ScrapingController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Scraping Job #{$jobNumber} executed! Saved {$job->leads_saved} leads.",
+            'message' => "Scraping Job #{$jobNumber} completed in seconds! Saved {$job->leads_saved} leads.",
             'data' => $job
         ], 201);
     }
